@@ -6,7 +6,7 @@ import Feedback from './components/Feedback';
 import { GameState, Option, Scenario } from './types';
 import { SCENARIOS, INITIAL_TIME, TIMER_DECAY, TIMER_TICK_MS } from './constants';
 import { getRandomScenario, getRank } from './utils';
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, Pause, Home, HelpCircle, X } from 'lucide-react';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -21,7 +21,9 @@ const App: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
   const [feedback, setFeedback] = useState<{ msg: string, type: 'good' | 'bad' | 'neutral' } | null>(null);
   const [isShake, setIsShake] = useState(false);
-  
+  const [isPaused, setIsPaused] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+
   const timerRef = useRef<number | null>(null);
 
   // Sound effects logic (simplified for React)
@@ -38,7 +40,31 @@ const App: React.FC = () => {
       streak: 0,
       history: []
     });
+    setIsPaused(false);
+    setShowHelp(false);
     nextScenario();
+  };
+
+  const returnToMenu = () => {
+    stopTimer();
+    setGameState({
+      status: 'MENU',
+      aura: 0,
+      maxAura: 0,
+      streak: 0,
+      history: []
+    });
+    setIsPaused(false);
+    setShowHelp(false);
+  };
+
+  const togglePause = () => {
+    if (isPaused) {
+      startTimer();
+    } else {
+      stopTimer();
+    }
+    setIsPaused(!isPaused);
   };
 
   const endGame = (reason: string) => {
@@ -150,29 +176,87 @@ const App: React.FC = () => {
   // Menu Screen
   if (gameState.status === 'MENU') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center z-20 relative">
-        <h1 className="text-6xl sm:text-9xl font-display font-black text-white mb-2 tracking-tighter mix-blend-difference">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center z-20 relative animate-fadeIn">
+        <h1 className="text-6xl sm:text-9xl font-display font-black text-white mb-2 tracking-tighter mix-blend-difference animate-glitch">
           ±AURA
         </h1>
         <p className="font-mono text-aura-green mb-12 text-lg sm:text-xl tracking-widest animate-pulse">
           SOCIAL CREDIT SIMULATOR
         </p>
-        
-        <div className="border border-aura-gray bg-black/50 p-6 max-w-md w-full text-left font-mono text-sm sm:text-base text-aura-light mb-8 space-y-2">
-          <p>{`> OBJECTIVE: ASCEND TO MAIN CHARACTER`}</p>
-          <p>{`> CAUTION: AVOID "CRINGE" STATUS`}</p>
-          <p>{`> CURRENT RANK: NPC`}</p>
+
+        <div className="border border-aura-gray bg-black/50 p-6 max-w-md w-full text-left font-mono text-sm sm:text-base text-aura-light mb-8 space-y-2 backdrop-blur-sm">
+          <p className="text-aura-gold">{`> OBJECTIVE: ASCEND TO MAIN CHARACTER`}</p>
+          <p className="text-aura-red">{`> CAUTION: AVOID "CRINGE" STATUS`}</p>
+          <p className="text-aura-gray">{`> CURRENT RANK: NPC`}</p>
+          <p className="text-aura-green mt-4">{`> TIP: MAKE QUICK DECISIONS`}</p>
         </div>
 
-        <button 
-          onClick={startGame}
-          className="group relative px-8 py-4 bg-aura-light text-aura-bg font-bold font-mono text-xl uppercase hover:bg-aura-green hover:scale-105 transition-all duration-200"
-        >
-          <span className="flex items-center gap-2">
-            <Play fill="currentColor" /> Initialize
-          </span>
-          <div className="absolute inset-0 border-2 border-white translate-x-1 translate-y-1 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform -z-10"></div>
-        </button>
+        <div className="flex flex-col gap-4 w-full max-w-md">
+          <button
+            onClick={startGame}
+            className="group relative px-8 py-4 bg-aura-green text-black font-bold font-mono text-xl uppercase hover:bg-aura-light hover:scale-105 transition-all duration-200 shadow-lg shadow-aura-green/50"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <Play fill="currentColor" size={24} /> Start Game
+            </span>
+            <div className="absolute inset-0 border-2 border-white translate-x-1 translate-y-1 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform -z-10"></div>
+          </button>
+
+          <button
+            onClick={() => setShowHelp(true)}
+            className="group px-6 py-3 bg-transparent border-2 border-aura-gray text-aura-light font-bold font-mono text-lg uppercase hover:border-aura-gold hover:text-aura-gold transition-all duration-200"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <HelpCircle size={20} /> How to Play
+            </span>
+          </button>
+        </div>
+
+        {showHelp && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-aura-bg border-2 border-aura-green max-w-2xl w-full p-8 relative shadow-2xl shadow-aura-green/30">
+              <button
+                onClick={() => setShowHelp(false)}
+                className="absolute top-4 right-4 text-aura-gray hover:text-aura-red transition-colors"
+              >
+                <X size={24} />
+              </button>
+
+              <h2 className="text-3xl font-display font-black text-aura-green mb-6">HOW TO PLAY</h2>
+
+              <div className="font-mono text-sm sm:text-base text-aura-light space-y-4">
+                <div className="border-l-4 border-aura-green pl-4">
+                  <p className="text-aura-gold font-bold mb-1">OBJECTIVE</p>
+                  <p>Navigate social scenarios to gain AURA and rise through the ranks from NPC to ELDRITCH GOD.</p>
+                </div>
+
+                <div className="border-l-4 border-aura-gold pl-4">
+                  <p className="text-aura-gold font-bold mb-1">DECISION TYPES</p>
+                  <p className="mb-2"><span className="text-aura-green">🛡 SAFE:</span> Guaranteed outcome, usually moderate gain or loss.</p>
+                  <p className="mb-2"><span className="text-aura-red">⚠️ RISK:</span> Gamble with high reward or severe punishment.</p>
+                  <p><span className="text-aura-gold">✨ WILD:</span> Unpredictable chaos. Use at your own risk.</p>
+                </div>
+
+                <div className="border-l-4 border-aura-red pl-4">
+                  <p className="text-aura-gold font-bold mb-1">GAME OVER</p>
+                  <p>If your AURA drops to -20,000 or below, you'll be CANCELED for being cringe.</p>
+                </div>
+
+                <div className="border-l-4 border-aura-gray pl-4">
+                  <p className="text-aura-gold font-bold mb-1">TIME PRESSURE</p>
+                  <p>Each scenario has a timer. If you're too slow (-1000 AURA penalty), you'll be judged.</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowHelp(false)}
+                className="mt-6 w-full px-6 py-3 bg-aura-green text-black font-bold font-mono text-lg uppercase hover:bg-aura-light transition-all"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -180,15 +264,15 @@ const App: React.FC = () => {
   // Game Over Screen
   if (gameState.status === 'GAMEOVER') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center z-20 relative bg-red-900/10">
-        <h1 className="text-5xl sm:text-8xl font-display font-black text-aura-red mb-4 tracking-tighter">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center z-20 relative bg-red-900/10 animate-fadeIn">
+        <h1 className="text-5xl sm:text-8xl font-display font-black text-aura-red mb-4 tracking-tighter animate-pulse">
           CANCELED
         </h1>
         <p className="font-mono text-aura-light text-xl mb-8">
           REASON: {gameState.history[gameState.history.length - 1] || "You fell off."}
         </p>
-        
-        <div className="bg-black border border-aura-gray p-8 mb-8">
+
+        <div className="bg-black border-2 border-aura-gray p-8 mb-8 backdrop-blur-sm shadow-2xl">
           <p className="text-aura-gray text-xs uppercase tracking-widest mb-2">Final Aura</p>
           <p className={`text-4xl font-mono font-bold ${gameState.aura >= 0 ? 'text-aura-green' : 'text-aura-red'}`}>
             {gameState.aura}
@@ -199,14 +283,25 @@ const App: React.FC = () => {
           </p>
         </div>
 
-        <button 
-          onClick={startGame}
-          className="group px-8 py-4 bg-transparent border-2 border-aura-light text-aura-light font-bold font-mono text-lg uppercase hover:bg-aura-light hover:text-black transition-all"
-        >
-          <span className="flex items-center gap-2">
-            <RotateCcw /> Redeem Yourself
-          </span>
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+          <button
+            onClick={startGame}
+            className="group flex-1 px-6 py-4 bg-aura-green text-black font-bold font-mono text-lg uppercase hover:bg-aura-light hover:scale-105 transition-all shadow-lg shadow-aura-green/50"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <RotateCcw size={20} /> Try Again
+            </span>
+          </button>
+
+          <button
+            onClick={returnToMenu}
+            className="group flex-1 px-6 py-4 bg-transparent border-2 border-aura-gray text-aura-light font-bold font-mono text-lg uppercase hover:border-aura-light hover:bg-aura-light/10 transition-all"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <Home size={20} /> Main Menu
+            </span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -215,26 +310,67 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col relative z-10 transition-transform duration-75 ${isShake ? 'animate-shake' : ''}`}>
       <Header aura={gameState.aura} streak={gameState.streak} />
-      
+
+      {/* Pause Button */}
+      <button
+        onClick={togglePause}
+        className="fixed top-4 right-4 z-30 p-3 bg-aura-bg/80 backdrop-blur-sm border border-aura-gray rounded-sm text-aura-light hover:text-aura-green hover:border-aura-green transition-all"
+      >
+        <Pause size={20} />
+      </button>
+
       {feedback && <Feedback message={feedback.msg} type={feedback.type} />}
 
-      <main className="flex-1 w-full max-w-3xl mx-auto p-4 flex flex-col justify-center">
-        <ScenarioCard 
-          text={currentScenario.text} 
-          timeLeft={timeLeft} 
+      <main className={`flex-1 w-full max-w-3xl mx-auto p-4 flex flex-col justify-center transition-all duration-300 ${isPaused ? 'blur-sm opacity-50' : ''}`}>
+        <ScenarioCard
+          text={currentScenario.text}
+          timeLeft={timeLeft}
         />
-        
+
         <div className="grid grid-cols-1 gap-4 w-full max-w-xl mx-auto">
           {currentScenario.options.map((opt) => (
-            <OptionButton 
-              key={opt.id} 
-              option={opt} 
-              onClick={handleOptionClick} 
-              disabled={!!feedback}
+            <OptionButton
+              key={opt.id}
+              option={opt}
+              onClick={handleOptionClick}
+              disabled={!!feedback || isPaused}
             />
           ))}
         </div>
       </main>
+
+      {/* Pause Menu */}
+      {isPaused && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-aura-bg border-2 border-aura-gray max-w-md w-full p-8 relative shadow-2xl">
+            <h2 className="text-4xl font-display font-black text-aura-light mb-8 text-center">PAUSED</h2>
+
+            <div className="space-y-4">
+              <button
+                onClick={togglePause}
+                className="w-full px-6 py-4 bg-aura-green text-black font-bold font-mono text-lg uppercase hover:bg-aura-light transition-all shadow-lg shadow-aura-green/50"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <Play size={20} /> Resume Game
+                </span>
+              </button>
+
+              <button
+                onClick={returnToMenu}
+                className="w-full px-6 py-4 bg-transparent border-2 border-aura-red text-aura-red font-bold font-mono text-lg uppercase hover:bg-aura-red hover:text-black transition-all"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <Home size={20} /> Exit to Menu
+                </span>
+              </button>
+            </div>
+
+            <p className="text-aura-gray text-xs font-mono text-center mt-6">
+              Your progress will be lost if you exit
+            </p>
+          </div>
+        </div>
+      )}
 
       <footer className="p-4 text-center text-aura-gray text-xs font-mono uppercase tracking-widest opacity-50">
         System Ver. 2.0.4 // Aura_OS
